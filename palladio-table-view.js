@@ -6,8 +6,8 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 			newScope.tableHeight = newScope.height === undefined ? undefined : newScope.height;
 
 			var compileString = '<div class="with-settings" data-palladio-table-view-with-settings ';
-			compileString += 'show-settings=showSettings ';
-			compileString += 'table-height=tableHeight ';
+			compileString += 'show-settings="showSettings" ';
+			compileString += 'table-height="tableHeight" ';
 
 			if(newScope.dimensions) {
 				compileString += 'config-dimensions="dimensions" ';
