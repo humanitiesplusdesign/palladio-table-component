@@ -2,7 +2,7 @@
   "name": "palladio-table-component",
   "description": "Table component for Palladio",
   "main": [
-    "dist/palladio-table-component.min.js",
+    "dist/palladio-table-component.js",
     "dist/palladio-table-component.css"
   ],
   "authors": [
