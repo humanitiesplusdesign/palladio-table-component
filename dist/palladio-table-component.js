@@ -4,10 +4,12 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 
 			newScope.showSettings = newScope.showSettings === undefined ? false : newScope.showSettings;
 			newScope.tableHeight = newScope.height === undefined ? undefined : newScope.height;
+			newScope.maxDisplay = newScope.maxDisplay === undefined ? Infinity : newScope.maxDisplay;
 
 			var compileString = '<div class="with-settings" data-palladio-table-view-with-settings ';
-			compileString += 'show-settings=showSettings ';
-			compileString += 'table-height=tableHeight ';
+			compileString += 'show-settings="showSettings" ';
+			compileString += 'max-display="maxDisplay" ';
+			compileString += 'table-height="tableHeight" ';
 
 			if(newScope.dimensions) {
 				compileString += 'config-dimensions="dimensions" ';
@@ -32,6 +34,7 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 			scope : {
 				dimensions : '=',
 				dimension : '=',
+				maxDisplay : '=',
 				tableHeight: '=',
 				xfilter: '=',
 				exportFunc: '='
@@ -117,7 +120,9 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 
 					headers.exit().remove();
 					headers.enter().append("th")
-						.text(function(d){ return d.key + " "; })
+						.text(function(d, i){
+							return d.key + " ";
+						})
 						.style("cursor","pointer")
 						.on("click", function(d) {
 								desc = sorting == d.key ? !desc : desc;
@@ -127,10 +132,6 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 							})
 						.append("i")
 						.style("margin-left","5px");
-
-					headers.select("i")
-						.attr("class", function(){ return desc ? "fa fa-sort-asc" : "fa fa-sort-desc"; })
-						.style("opacity", function(d){ return d.key == sorting ? 1 : 0; });
 
 					headers.order();
 
@@ -160,9 +161,7 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 								return d.values;
 							});
 
-					rows = table.select("tbody")
-							.selectAll("tr")
-							.data(nested.filter(function (d){
+					var fullData = nested.filter(function (d){
 									if(search) {
 										return dims.map(function (m) {
 											return d[m.key];
@@ -170,7 +169,26 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 									} else {
 										return true;
 									}
-								}).sort(sortFunc), function (d) {
+								}).sort(sortFunc);
+					var limitedData = fullData.slice(0,scope.maxDisplay);
+
+					// Update first header with information about number of records displayed
+					d3.select(headers[0][0]).text(function(d) {
+						return d.key + " " + "(" + limitedData.length + " of " + fullData.length + " rows displayed) ";
+					}).append("i")
+						.style("margin-left","5px");
+
+					// Finish building the headers
+					headers.select("i")
+						.attr("class", function(){ return desc ? "fa fa-sort-asc" : "fa fa-sort-desc"; })
+						.style("opacity", function(d){ return d.key == sorting ? 1 : 0; });
+
+					headers.order();
+
+					rows = table.select("tbody")
+							.selectAll("tr")
+							.data(limitedData,
+								function (d) {
 									return dims.map(function(m){
 										return d[m.key];
 									}).join() + uniqueDimension.accessor(d);
@@ -252,6 +270,7 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 			scope: {
 				tableHeight: '=',
 				showSettings: '=',
+				maxDisplay: '=',
 				configDimensions: '=',
 				configRow: '='
 			},
@@ -325,6 +344,7 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 						scope.$apply(function () {
 							scope.tableDimensions = state.tableDimensions;
 							scope.countDim = state.countDim;
+							scope.maxDisplay = state.maxDisplay === undefined ? Infinity : state.maxDisplay;
 
 							scope.setInternalState(state);
 						});
@@ -333,7 +353,8 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 					function exportState() {
 						return scope.readInternalState({
 							tableDimensions: scope.tableDimensions,
-							countDim: scope.countDim
+							countDim: scope.countDim,
+							maxDisplay: scope.maxDisplay
 						});
 					}
 
@@ -359,5 +380,5 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 
 angular.module('palladio').run(['$templateCache', function($templateCache) {
     $templateCache.put('partials/palladio-table-component/template.html',
-        "<div class=\"\">\n\n\t\t<div data-ng-show=\"countDim\"\n\t\t\tdata-palladio-table-view\n\t\t\tdimension=\"countDim\"\n\t\t\ttable-height=\"tableHeight\"\n\t\t\tdimensions=\"tableDimensions\"\n\t\t\txfilter=\"xfilter\"\n\t\t\texport-func=\"exportCsv\">\n\t\t</div>\n\n</div>\n\n<!-- Settings -->\n<div class=\"row\" data-ng-show=\"showSettings || showSettings === undefined\">\n\n    <div class=\"settings col-lg-4 col-lg-offset-8 col-md-6 col-md-offset-6\">\n      <div class=\"panel panel-default\">\n\n        <a class=\"settings-toggle\" data-toggle=\"tooltip\" data-original-title=\"Settings\" data-placement=\"bottom\">\n          <i class=\"fa fa-bars\"></i>\n        </a>\n\n        <div class=\"panel-body\">\n\n          <div class=\"row\">\n            <div class=\"col-lg-12\">\n              <label>Settings</label>\n            </div>\n          </div>\n\n          <div class=\"row margin-top\">\n            <div class=\"col-lg-4 col-md-4 col-sm-4 col-xs-4 text-right\">\n              <label class=\"inline\">Row dimension</label>\n            </div>\n            <div class=\"col-lg-8 col-md-8 col-sm-8 col-xs-8 col-condensed\">\n              <span class=\"btn btn-default\" ng-click=\"showCountModal()\">\n                  {{countDim.description || \"Choose\"}}\n                  <span class=\"caret\"></span>\n              </span>\n\t\t\t\t\t\t\t<p class=\"help-block\">At least one row per value in this dimension. Multiple values will be displayed as lists in each cell.</p>\n\n            </div>\n          </div>\n\n          <div class=\"row margin-top\">\n            <div class=\"col-lg-4 col-md-4 col-sm-4 col-xs-4 text-right\">\n              <label class=\"inline\">Dimensions</label>\n            </div>\n            <div class=\"col-lg-8 col-md-8 col-sm-8 col-xs-8 col-condensed\">\n\t\t\t\t\t\t\t<span class=\"btn btn-default\" ng-click=\"showModal()\">\n                  {{fieldDescriptions() || \"Choose\"}}\n                  <span class=\"caret\"></span>\n              </span>\n            </div>\n          </div>\n\n\t\t\t\t\t<div class=\"row margin-top\">\n            <div class=\"col-lg-4 col-md-4 col-sm-4 col-xs-4 text-right\">\n            </div>\n            <div class=\"col-lg-8 col-md-8 col-sm-8 col-xs-8 col-condensed\">\n\n              <a class=\"pull-right\"\n\t\t\t\t\t\t\ttooltip=\"Download data (csv)\"\n\t\t\t\t\t\t\ttooltip-animation=\"false\"\n\t\t\t\t\t\t\ttooltip-append-to-body=\"true\"\n\t\t\t\t\t\t\tng-click=\"exportCsv()\">\n\t\t\t\t\t\t\t\t<i class=\"fa fa-download margin-right\"></i>Download\n\t\t\t\t\t\t\t</a>\n\n            </div>\n          </div>\n\n\n        </div>\n      </div>\n    </div>\n\n</div>\n\n<div id=\"{{uniqueModalId}}\" data-ng-show=\"showSettings || showSettings === undefined\">\n\t<div id=\"table-modal\" data-modal description=\"Choose data dimensions\" dimensions=\"fields\" model=\"tableDimensions\" sortable=\"true\"></div>\n\t<div id=\"count-modal\" data-modal description=\"Choose key dimension (one row for each value of this dimension)\" dimensions=\"countDims\" model=\"countDim\" description-accessor=\"getCountDescription\"></div>\n</div>\n");
+        "<div class=\"\">\n\n\t\t<div data-ng-show=\"countDim\"\n\t\t\tdata-palladio-table-view\n\t\t\tdimension=\"countDim\"\n\t\t\ttable-height=\"tableHeight\"\n\t\t\tdimensions=\"tableDimensions\"\n      max-display=\"maxDisplay\"\n\t\t\txfilter=\"xfilter\"\n\t\t\texport-func=\"exportCsv\">\n\t\t</div>\n\n</div>\n\n<!-- Settings -->\n<div class=\"row\" data-ng-show=\"showSettings || showSettings === undefined\">\n\n    <div class=\"settings col-lg-4 col-lg-offset-8 col-md-6 col-md-offset-6\">\n      <div class=\"panel panel-default\">\n\n        <a class=\"settings-toggle\" data-toggle=\"tooltip\" data-original-title=\"Settings\" data-placement=\"bottom\">\n          <i class=\"fa fa-bars\"></i>\n        </a>\n\n        <div class=\"panel-body\">\n\n          <div class=\"row\">\n            <div class=\"col-lg-12\">\n              <label>Settings</label>\n            </div>\n          </div>\n\n          <div class=\"row margin-top\">\n            <div class=\"col-lg-4 col-md-4 col-sm-4 col-xs-4 text-right\">\n              <label class=\"inline\">Row dimension</label>\n            </div>\n            <div class=\"col-lg-8 col-md-8 col-sm-8 col-xs-8 col-condensed\">\n              <span class=\"btn btn-default\" ng-click=\"showCountModal()\">\n                  {{countDim.description || \"Choose\"}}\n                  <span class=\"caret\"></span>\n              </span>\n\t\t\t\t\t\t\t<p class=\"help-block\">At least one row per value in this dimension. Multiple values will be displayed as lists in each cell.</p>\n\n            </div>\n          </div>\n\n          <div class=\"row margin-top\">\n            <div class=\"col-lg-4 col-md-4 col-sm-4 col-xs-4 text-right\">\n              <label class=\"inline\">Dimensions</label>\n            </div>\n            <div class=\"col-lg-8 col-md-8 col-sm-8 col-xs-8 col-condensed\">\n\t\t\t\t\t\t\t<span class=\"btn btn-default\" ng-click=\"showModal()\">\n                  {{fieldDescriptions() || \"Choose\"}}\n                  <span class=\"caret\"></span>\n              </span>\n            </div>\n          </div>\n\n\t\t\t\t\t<div class=\"row margin-top\">\n            <div class=\"col-lg-4 col-md-4 col-sm-4 col-xs-4 text-right\">\n            </div>\n            <div class=\"col-lg-8 col-md-8 col-sm-8 col-xs-8 col-condensed\">\n\n              <a class=\"pull-right\"\n\t\t\t\t\t\t\ttooltip=\"Download data (csv)\"\n\t\t\t\t\t\t\ttooltip-animation=\"false\"\n\t\t\t\t\t\t\ttooltip-append-to-body=\"true\"\n\t\t\t\t\t\t\tng-click=\"exportCsv()\">\n\t\t\t\t\t\t\t\t<i class=\"fa fa-download margin-right\"></i>Download\n\t\t\t\t\t\t\t</a>\n\n            </div>\n          </div>\n\n\n        </div>\n      </div>\n    </div>\n\n</div>\n\n<div id=\"{{uniqueModalId}}\" data-ng-show=\"showSettings || showSettings === undefined\">\n\t<div id=\"table-modal\" data-modal description=\"Choose data dimensions\" dimensions=\"fields\" model=\"tableDimensions\" sortable=\"true\"></div>\n\t<div id=\"count-modal\" data-modal description=\"Choose key dimension (one row for each value of this dimension)\" dimensions=\"countDims\" model=\"countDim\" description-accessor=\"getCountDescription\"></div>\n</div>\n");
 }]);

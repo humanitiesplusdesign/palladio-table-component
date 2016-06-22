@@ -4,9 +4,11 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 
 			newScope.showSettings = newScope.showSettings === undefined ? false : newScope.showSettings;
 			newScope.tableHeight = newScope.height === undefined ? undefined : newScope.height;
+			newScope.maxDisplay = newScope.maxDisplay === undefined ? Infinity : newScope.maxDisplay;
 
 			var compileString = '<div class="with-settings" data-palladio-table-view-with-settings ';
 			compileString += 'show-settings="showSettings" ';
+			compileString += 'max-display="maxDisplay" ';
 			compileString += 'table-height="tableHeight" ';
 
 			if(newScope.dimensions) {
@@ -32,6 +34,7 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 			scope : {
 				dimensions : '=',
 				dimension : '=',
+				maxDisplay : '=',
 				tableHeight: '=',
 				xfilter: '=',
 				exportFunc: '='
@@ -117,7 +120,9 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 
 					headers.exit().remove();
 					headers.enter().append("th")
-						.text(function(d){ return d.key + " "; })
+						.text(function(d, i){
+							return d.key + " ";
+						})
 						.style("cursor","pointer")
 						.on("click", function(d) {
 								desc = sorting == d.key ? !desc : desc;
@@ -127,10 +132,6 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 							})
 						.append("i")
 						.style("margin-left","5px");
-
-					headers.select("i")
-						.attr("class", function(){ return desc ? "fa fa-sort-asc" : "fa fa-sort-desc"; })
-						.style("opacity", function(d){ return d.key == sorting ? 1 : 0; });
 
 					headers.order();
 
@@ -160,9 +161,7 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 								return d.values;
 							});
 
-					rows = table.select("tbody")
-							.selectAll("tr")
-							.data(nested.filter(function (d){
+					var fullData = nested.filter(function (d){
 									if(search) {
 										return dims.map(function (m) {
 											return d[m.key];
@@ -170,7 +169,26 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 									} else {
 										return true;
 									}
-								}).sort(sortFunc), function (d) {
+								}).sort(sortFunc);
+					var limitedData = fullData.slice(0,scope.maxDisplay);
+
+					// Update first header with information about number of records displayed
+					d3.select(headers[0][0]).text(function(d) {
+						return d.key + " " + "(" + limitedData.length + " of " + fullData.length + " rows displayed) ";
+					}).append("i")
+						.style("margin-left","5px");
+
+					// Finish building the headers
+					headers.select("i")
+						.attr("class", function(){ return desc ? "fa fa-sort-asc" : "fa fa-sort-desc"; })
+						.style("opacity", function(d){ return d.key == sorting ? 1 : 0; });
+
+					headers.order();
+
+					rows = table.select("tbody")
+							.selectAll("tr")
+							.data(limitedData,
+								function (d) {
 									return dims.map(function(m){
 										return d[m.key];
 									}).join() + uniqueDimension.accessor(d);
@@ -252,6 +270,7 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 			scope: {
 				tableHeight: '=',
 				showSettings: '=',
+				maxDisplay: '=',
 				configDimensions: '=',
 				configRow: '='
 			},
@@ -325,6 +344,7 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 						scope.$apply(function () {
 							scope.tableDimensions = state.tableDimensions;
 							scope.countDim = state.countDim;
+							scope.maxDisplay = state.maxDisplay === undefined ? Infinity : state.maxDisplay;
 
 							scope.setInternalState(state);
 						});
@@ -333,7 +353,8 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 					function exportState() {
 						return scope.readInternalState({
 							tableDimensions: scope.tableDimensions,
-							countDim: scope.countDim
+							countDim: scope.countDim,
+							maxDisplay: scope.maxDisplay
 						});
 					}
 
