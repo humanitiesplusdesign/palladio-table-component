@@ -242,10 +242,11 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 					}
 					update();
 				});
-
+				
 				function updateDims() {
 					if(scope.dimension) {
 						dims = [scope.dimension].concat(scope.dimensions);
+						console.log(dims.map(function(d){ return d.key; }));
 					}
 				}
 
@@ -308,6 +309,11 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 					if(scope.configDimensions) {
 						scope.configDimensions.forEach(function(d) {
 							scope.tableDimensions.push(scope.fields.filter(function(f) { return f.key === d.key; })[0]);
+						});
+
+						// Re-order fields so that selected dimensions are in the same order. Otherwise alphabetical.
+						scope.fields = scope.fields.sort(function (a, b) {
+							return scope.tableDimensions.indexOf(a) < scope.tableDimensions.indexOf(b) ? -1 : 1; 
 						});
 					}
 
