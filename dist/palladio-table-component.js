@@ -246,7 +246,6 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 				function updateDims() {
 					if(scope.dimension) {
 						dims = [scope.dimension].concat(scope.dimensions);
-						console.log(dims.map(function(d){ return d.key; }));
 					}
 				}
 
