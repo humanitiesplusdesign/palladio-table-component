@@ -346,9 +346,11 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 					scope.exportCsv = function () {};
 
 					function importState(state) {
-						scope.$apply(function () {
-							scope.tableDimensions = state.tableDimensions;
-							scope.countDim = state.countDim;
+						scope.$apply(function (s) {
+							scope.tableDimensions = state.tableDimensions.map(function(d) {
+								return s.fields.filter(function(f) { return f.key === d.key })[0]
+							});
+							scope.countDim = s.fields.filter(function(f) { return f.key === state.countDim.key; })[0];
 							scope.maxDisplay = state.maxDisplay === undefined ? Infinity : state.maxDisplay;
 
 							scope.setInternalState(state);
@@ -357,8 +359,8 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 
 					function exportState() {
 						return scope.readInternalState({
-							tableDimensions: scope.tableDimensions,
-							countDim: scope.countDim,
+							tableDimensions: scope.tableDimensions.map(function(d) { return { key: d.key }; }),
+							countDim: scope.countDim ? { key: scope.countDim.key } : null,
 							maxDisplay: scope.maxDisplay
 						});
 					}
