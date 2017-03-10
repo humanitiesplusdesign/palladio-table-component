@@ -350,7 +350,7 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 							scope.tableDimensions = state.tableDimensions.map(function(d) {
 								return s.fields.filter(function(f) { return f.key === d.key })[0]
 							});
-							scope.countDim = s.fields.filter(function(f) { return f.key === state.countDim.key; })[0];
+							scope.countDim = state.countDim ? s.fields.filter(function(f) { return f.key === state.countDim.key; })[0] : null;
 							scope.maxDisplay = state.maxDisplay === undefined ? Infinity : state.maxDisplay;
 
 							scope.setInternalState(state);
