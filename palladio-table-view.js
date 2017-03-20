@@ -5,10 +5,12 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 			newScope.showSettings = newScope.showSettings === undefined ? false : newScope.showSettings;
 			newScope.tableHeight = newScope.height === undefined ? undefined : newScope.height;
 			newScope.maxDisplay = newScope.maxDisplay === undefined ? Infinity : newScope.maxDisplay;
+			newScope.functions = {};
 
 			var compileString = '<div class="with-settings" data-palladio-table-view-with-settings ';
 			compileString += 'show-settings="showSettings" ';
 			compileString += 'max-display="maxDisplay" ';
+			compileString += 'functions=functions ';
 			compileString += 'table-height="tableHeight" ';
 
 			if(newScope.dimensions) {
@@ -272,7 +274,8 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 				showSettings: '=',
 				maxDisplay: '=',
 				configDimensions: '=',
-				configRow: '='
+				configRow: '=',
+				functions: '='
 			},
 			templateUrl : 'partials/palladio-table-component/template.html',
 			link: {
@@ -344,6 +347,12 @@ angular.module('palladioTableComponent', ['palladio', 'palladio.services'])
 					};
 
 					scope.exportCsv = function () {};
+
+					if(scope.functions) {
+						scope.functions['getSettings'] = function() {
+							return element.find('.table-settings')[0];
+						}
+					}
 
 					function importState(state) {
 						scope.$apply(function (s) {
